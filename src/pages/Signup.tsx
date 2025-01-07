@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Clock } from 'lucide-react';
 
-const Signup = () => {
+const Signup: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,10 +28,12 @@ const Signup = () => {
     
     if (!error && data) {
       setManagers(data);
+    } else {
+      console.error('Error fetching managers:', error);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -43,17 +45,25 @@ const Signup = () => {
         password,
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        if (authError.message === 'User already registered') {
+          setError('User already registered. Please log in.');
+        } else {
+          throw authError;
+        }
+        return;
+      }
 
       // 2. Get manager's user ID if role is associate
       let managerId = null;
       if (role === 'associate') {
-        const { data: managerData } = await supabase
+        const { data: managerData, error: managerError } = await supabase
           .from('users')
           .select('id')
           .eq('email', managerEmail)
           .single();
         
+        if (managerError) throw managerError;
         managerId = managerData?.id;
       }
 
@@ -170,7 +180,7 @@ const Signup = () => {
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                 >
                   <option value="">Select a manager</option>
-                  {managers.map(manager => (
+                  {managers.map((manager: { email: string }) => (
                     <option key={manager.email} value={manager.email}>
                       {manager.email}
                     </option>
