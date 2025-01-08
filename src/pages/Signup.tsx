@@ -25,7 +25,7 @@ const Signup: React.FC = () => {
       .from('users')
       .select('email')
       .eq('role', 'manager');
-    
+
     if (!error && data) {
       setManagers(data);
     } else {
@@ -62,7 +62,7 @@ const Signup: React.FC = () => {
           .select('id')
           .eq('email', managerEmail)
           .single();
-        
+
         if (managerError) throw managerError;
         managerId = managerData?.id;
       }
