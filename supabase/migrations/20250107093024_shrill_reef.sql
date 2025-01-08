@@ -9,6 +9,11 @@
       - `role` (text)
       - `created_at` (timestamp)
     
+    - `managers`
+      - `user_id` (uuid, primary key, foreign key)
+      - `department` (text)
+      - `created_at` (timestamp)
+
     - `schedules`
       - `id` (uuid, primary key)
       - `user_id` (uuid, foreign key)
@@ -39,6 +44,14 @@ CREATE TABLE users (
   full_name text NOT NULL,
   role text NOT NULL CHECK (role IN ('manager', 'associate')),
   created_at timestamptz DEFAULT now()
+);
+
+-- Create managers table
+CREATE TABLE managers (
+  user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  department text NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  CHECK ((SELECT role FROM users WHERE id = user_id) = 'manager')
 );
 
 -- Create schedules table
@@ -77,6 +90,7 @@ CREATE TABLE leaves (
 
 -- Enable RLS
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE managers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leaves ENABLE ROW LEVEL SECURITY;
 
@@ -87,9 +101,15 @@ CREATE POLICY "Users can view their own data and managers can view all"
   USING (
     auth.uid() = id OR 
     EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND role = 'manager'
+      SELECT 1 FROM managers WHERE user_id = auth.uid()
     )
   );
+
+-- Policies for managers table
+CREATE POLICY "Managers can view their own data"
+  ON managers
+  FOR SELECT
+  USING (auth.uid() = user_id);
 
 -- Policies for schedules table
 CREATE POLICY "Associates can view their schedule and managers can view all"
@@ -98,7 +118,7 @@ CREATE POLICY "Associates can view their schedule and managers can view all"
   USING (
     user_id = auth.uid() OR 
     EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND role = 'manager'
+      SELECT 1 FROM managers WHERE user_id = auth.uid()
     )
   );
 
@@ -107,7 +127,7 @@ CREATE POLICY "Only managers can update schedules"
   FOR ALL
   USING (
     EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND role = 'manager'
+      SELECT 1 FROM managers WHERE user_id = auth.uid()
     )
   );
 
@@ -118,7 +138,7 @@ CREATE POLICY "Associates can view their leaves and managers can view all"
   USING (
     user_id = auth.uid() OR 
     EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND role = 'manager'
+      SELECT 1 FROM managers WHERE user_id = auth.uid()
     )
   );
 
@@ -139,6 +159,6 @@ CREATE POLICY "Managers can update all leaves"
   FOR UPDATE
   USING (
     EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND role = 'manager'
+      SELECT 1 FROM managers WHERE user_id = auth.uid()
     )
   );

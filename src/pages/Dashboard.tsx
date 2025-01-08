@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend } from 'date-fns';
+import { useEffect, useState } from 'react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 

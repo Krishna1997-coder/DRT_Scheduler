@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Associate {
   id: string;
   full_name: string;
   email: string;
+  role: string;
   schedule?: {
     weekoff_1: number;
     weekoff_2: number;
@@ -25,10 +27,13 @@ const Associates = () => {
     shift_start: '09:00',
     shift_end: '18:00'
   });
+  const { session } = useAuth();
 
   useEffect(() => {
-    fetchAssociates();
-  }, []);
+    if (session?.user?.id) {
+      fetchAssociates();
+    }
+  }, [session?.user?.id]);
 
   const fetchAssociates = async () => {
     try {
