@@ -105,6 +105,12 @@ CREATE POLICY "Users can view their own data and managers can view all"
     )
   );
 
+-- Allow authenticated users to insert new rows
+CREATE POLICY "Authenticated users can insert new rows"
+  ON users
+  FOR INSERT
+  WITH CHECK (auth.uid() IS NOT NULL);
+
 -- Policies for managers table
 CREATE POLICY "Managers can view their own data"
   ON managers
