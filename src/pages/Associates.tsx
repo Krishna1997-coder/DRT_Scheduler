@@ -27,7 +27,8 @@ const Associates = () => {
     shift_start: '09:00',
     shift_end: '18:00'
   });
-  const { session } = useAuth();
+  const [saving, setSaving] = useState(false);  // New saving state
+  const { session, role } = useAuth();
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -50,7 +51,7 @@ const Associates = () => {
         `)
         .eq('role', 'associate')
         .order('full_name');
-      
+
       if (error) throw error;
       setAssociates(data?.map(associate => ({
         ...associate,
@@ -75,6 +76,7 @@ const Associates = () => {
 
   const handleSave = async () => {
     if (!editingId) return;
+    setSaving(true);  // Set saving to true
 
     try {
       const { error } = await supabase
@@ -87,9 +89,26 @@ const Associates = () => {
       if (error) throw error;
       fetchAssociates();
       setEditingId(null);
-    } catch (error) {
-      console.error('Error updating schedule:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('Error updating schedule:', error.message);
+        alert('Failed to save schedule: ' + error.message);
+      } else {
+        console.error('Unknown error:', error);
+      }
+    } finally {
+      setSaving(false);  // Set saving to false when done
     }
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    setSchedule({
+      weekoff_1: 0,
+      weekoff_2: 6,
+      shift_start: '09:00',
+      shift_end: '18:00'
+    });
   };
 
   if (loading) {
@@ -109,23 +128,28 @@ const Associates = () => {
                 <h3 className="font-medium">{associate.full_name}</h3>
                 <p className="text-sm text-gray-500">{associate.email}</p>
               </div>
-              {editingId === associate.id ? (
-                <button
-                  onClick={handleSave}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
-                >
-                  Save
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleEdit(associate)}
-                  className="text-blue-600 hover:text-blue-700 text-sm"
-                >
-                  Edit Schedule
-                </button>
+              {role === 'manager' && (  // Ensure manager has access to edit
+                <div>
+                  {editingId === associate.id ? (
+                    <button
+                      onClick={handleSave}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
+                      disabled={saving}
+                    >
+                      {saving ? 'Saving...' : 'Save'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleEdit(associate)}
+                      className="text-blue-600 hover:text-blue-700 text-sm"
+                    >
+                      Edit Schedule
+                    </button>
+                  )}
+                </div>
               )}
             </div>
-            
+
             {editingId === associate.id ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -173,6 +197,14 @@ const Associates = () => {
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
+                </div>
+                <div className="flex space-x-4 mt-4">
+                  <button
+                    onClick={handleCancel}
+                    className="text-gray-600 hover:text-gray-700 text-sm"
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
             ) : (

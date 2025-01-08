@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext'; // Ensure you're importing useAuth correctly
 import { supabase } from '../lib/supabase';
 
 interface Leave {
@@ -27,7 +27,7 @@ const LEAVE_TYPES = [
 ];
 
 const Leaves = () => {
-  const { session, isManager } = useAuth();
+  const { session, role, userId } = useAuth(); // Using role and userId from context
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [newLeave, setNewLeave] = useState({
     leave_type: LEAVE_TYPES[0],
@@ -38,7 +38,7 @@ const Leaves = () => {
 
   useEffect(() => {
     fetchLeaves();
-  }, [session?.user?.id, isManager]);
+  }, [session?.user?.id, role]); // Make sure to refetch when role or userId changes
 
   const fetchLeaves = async () => {
     try {
@@ -50,8 +50,8 @@ const Leaves = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (!isManager) {
-        query.eq('user_id', session?.user?.id);
+      if (role !== 'manager') {
+        query.eq('user_id', userId);
       }
 
       const { data, error } = await query;
@@ -111,7 +111,7 @@ const Leaves = () => {
 
   return (
     <div className="space-y-6">
-      {!isManager && (
+      {role !== 'manager' && (
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Request Leave</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -165,7 +165,7 @@ const Leaves = () => {
           {leaves.map(leave => (
             <div key={leave.id} className="p-6 flex items-center justify-between">
               <div>
-                {isManager && (
+                {role === 'manager' && (
                   <div className="text-sm text-gray-500">
                     {leave.user?.full_name}
                   </div>
@@ -178,7 +178,7 @@ const Leaves = () => {
                   {leave.status}
                 </span>
               </div>
-              {isManager && leave.status === 'pending' && (
+              {role === 'manager' && leave.status === 'pending' && (
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleStatusUpdate(leave.id, 'approved')}

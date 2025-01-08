@@ -15,6 +15,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
+  const { role } = useAuth(); // Access role directly from AuthContext
+
   return (
     <AuthProvider>
       <BrowserRouter>
@@ -30,7 +32,10 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
-            <Route path="associates" element={<Associates />} />
+            <Route
+              path="associates"
+              element={role === 'manager' ? <Associates /> : <Navigate to="/" />}
+            />
             <Route path="leaves" element={<Leaves />} />
           </Route>
         </Routes>
